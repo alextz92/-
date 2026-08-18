@@ -193,6 +193,21 @@
   .home-header{padding:20px 18px 6px;}
   .home-title{font-size:20px;font-weight:800;color:var(--asphalt-900);}
   .home-sub{font-size:13px;color:var(--stone-500);margin-top:4px;}
+  .shared-badge{
+    margin-top:10px;display:flex;align-items:center;gap:7px;
+    background:var(--stone-200);border:1px solid var(--stone-300);border-radius:10px;
+    padding:8px 11px;font-size:11.5px;color:var(--asphalt-700);font-weight:600;line-height:1.4;
+  }
+  .shared-badge svg{flex:none;opacity:.7;}
+  .list-title-row{
+    display:flex;align-items:center;justify-content:space-between;padding:6px 18px;
+  }
+  .refresh-btn{
+    border:none;background:var(--stone-200);color:var(--asphalt-700);border-radius:8px;
+    width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;
+  }
+  .refresh-btn.spinning svg{animation:spin .7s linear;}
+  @keyframes spin{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
   .newshift-btn{
     margin:16px 18px;padding:16px;border-radius:14px;border:none;background:var(--asphalt-900);color:var(--text-light);
     font-family:inherit;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
@@ -297,7 +312,14 @@ const T = {
     translating:"מתרגם...",
     translationLabelToAr:"תרגום לערבית",
     translationLabelToHe:"תרגום לעברית",
-    translationFailed:"לא ניתן היה לתרגם"
+    translationFailed:"לא ניתן היה לתרגם",
+    saveFailed:"שמירה נכשלה — בדוק חיבור לאינטרנט ונסה שוב",
+    sharedNote:"כל המשמרות כאן משותפות — ניתן לצפות בהן מכל מכשיר עם גישה לאפליקציה",
+    refresh:"רענן",
+    crusherProduction:"ייצור קראשר (טונות)",
+    secondaryProduction:"ייצור מערך משני (טונות)",
+    totalProduction:"סה\"כ ייצור במשמרת (טונות)",
+    tonsUnit:"טון"
   },
   ar: {
     appTitle:"متابعة إنتاج محطة الكسّارة والإسفلت",
@@ -350,7 +372,14 @@ const T = {
     translating:"عم يترجم...",
     translationLabelToAr:"ترجمة للعربي",
     translationLabelToHe:"ترجمة للعبري",
-    translationFailed:"ما قدرنا نترجم"
+    translationFailed:"ما قدرنا نترجم",
+    saveFailed:"الحفظ فشل — تأكد من الإنترنت وجرّب كمان مرة",
+    sharedNote:"كل الشفتات هون مشتركة — ممكن تشوفهم من أي جهاز إله دخول للتطبيق",
+    refresh:"تحديث",
+    crusherProduction:"إنتاج الكسّارة (طن)",
+    secondaryProduction:"إنتاج المنظومة الثانوية (طن)",
+    totalProduction:"مجموع الإنتاج بالشفت (طن)",
+    tonsUnit:"طن"
   }
 };
 
@@ -365,7 +394,9 @@ const ICONS = {
   trash:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
   plus:'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   check:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
-  chevron:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>'
+  chevron:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  refresh:'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>',
+  factory:'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V10l5 3v-3l5 3v-3l6 3v8z"/><path d="M3 21h18"/></svg>'
 };
 
 let state = {
@@ -393,7 +424,8 @@ function emptyForm(){
   };
 }
 
-function computeHours(startClock, endClock){
+function computeProduction(startClock, endClock, startNA, endNA){
+  if(startNA && endNA) return 'NA';
   const s = parseFloat(startClock), e = parseFloat(endClock);
   if(isNaN(s) || isNaN(e)) return null;
   const diff = e - s;
@@ -444,18 +476,38 @@ async function translateText(text, fromLang){
 function t(){ return T[state.lang]; }
 function uid(){ return 'r' + Math.random().toString(36).slice(2,9); }
 
+const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbwnAHiKFEPh-jo32UualHiiOOsdxB6uguNJ9oquE4Hyh1iVd1o7K37pYjcETS-VIask/exec';
+
 async function loadShifts(){
   try{
-    const res = await window.storage.get('shifts', false);
-    state.shifts = res && res.value ? JSON.parse(res.value) : [];
+    const res = await fetch(SHEETS_API_URL, { method:'GET' });
+    const data = await res.json();
+    state.shifts = data.shifts || [];
   }catch(e){
-    state.shifts = [];
+    // keep whatever was already loaded if the sheet is unreachable
   }
 }
-async function saveShifts(){
+
+async function saveShiftRemote(shift){
   try{
-    await window.storage.set('shifts', JSON.stringify(state.shifts), false);
-  }catch(e){}
+    await fetch(SHEETS_API_URL, {
+      method:'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action:'save', shift })
+    });
+    return true;
+  }catch(e){ return false; }
+}
+
+async function deleteShiftRemote(id){
+  try{
+    await fetch(SHEETS_API_URL, {
+      method:'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action:'delete', id })
+    });
+    return true;
+  }catch(e){ return false; }
 }
 
 function showToast(msg){
@@ -536,7 +588,8 @@ function renderHome(){
   const wrap = el('div', {});
   wrap.appendChild(el('div', {class:'home-header'},
     el('div', {class:'home-title'}, T_.homeTitle),
-    el('div', {class:'home-sub'}, T_.homeSub)
+    el('div', {class:'home-sub'}, T_.homeSub),
+    el('div', {class:'shared-badge'}, el('span',{html:ICONS.factory}), T_.sharedNote)
   ));
   wrap.appendChild(el('button', {class:'newshift-btn', onclick:startNewShift},
     el('span', {html:ICONS.plus}), T_.newShift
@@ -545,14 +598,24 @@ function renderHome(){
   if(sorted.length === 0){
     wrap.appendChild(el('div', {class:'empty-state'}, T_.noShifts));
   } else {
-    wrap.appendChild(el('div', {class:'list-title'}, T_.savedShiftsTitle + ' · ' + T_.homeCounts(sorted.length)));
+    const titleRow = el('div', {class:'list-title-row'});
+    titleRow.appendChild(el('div', {class:'list-title', style:'padding:0;'}, T_.savedShiftsTitle + ' · ' + T_.homeCounts(sorted.length)));
+    titleRow.appendChild(el('button', {class:'refresh-btn', onclick: async (e)=>{
+      const btn = e.currentTarget; btn.classList.add('spinning');
+      await loadShifts(); render();
+    }, title: T_.refresh}, el('span',{html:ICONS.refresh})));
+    wrap.appendChild(titleRow);
     const list = el('div', {class:'shift-list'});
     sorted.forEach(s=>{
       const truckTotal = (s.truckRows||[]).reduce((a,r)=>a+(Number(r.truckCount)||0),0);
+      const cTons = computeProduction(s.crusherStartClock, s.crusherEndClock, s.crusherStartTimeNA, s.crusherEndTimeNA);
+      const sTons = computeProduction(s.secondaryStartClock, s.secondaryEndClock, s.secondaryStartTimeNA, s.secondaryEndTimeNA);
+      const totalTons = (typeof cTons==='number' ? cTons : 0) + (typeof sTons==='number' ? sTons : 0);
+      const tonsLabel = (typeof cTons==='number' || typeof sTons==='number') ? (Math.round(totalTons*10)/10) + ' ' + T_.tonsUnit : '—';
       list.appendChild(el('div', {class:'shift-card', onclick:()=>{ state.screen='view'; state.editingId=s.id; render(); }},
         el('div', {class:'sc-main'},
           el('div', {class:'sc-date'}, fmtDate(s.date)),
-          el('div', {class:'sc-op'}, (s.operatorName||'—') + ' · ' + T_.truckSummary + ': ' + truckTotal)
+          el('div', {class:'sc-op'}, (s.operatorName||'—') + ' · ' + T_.truckSummary + ': ' + truckTotal + ' · ' + T_.totalProduction.split(' (')[0] + ': ' + tonsLabel)
         ),
         el('div', {class:'sc-chevron', html: state.lang==='ar' ? mirrorIcon(ICONS.chevron) : ICONS.chevron})
       ));
@@ -648,6 +711,28 @@ function hoursCard(){
   return wrap;
 }
 
+function tonsCard(form){
+  const T_ = t();
+  const cTons = computeProduction(form.crusherStartClock, form.crusherEndClock, form.crusherStartTimeNA, form.crusherEndTimeNA);
+  const sTons = computeProduction(form.secondaryStartClock, form.secondaryEndClock, form.secondaryStartTimeNA, form.secondaryEndTimeNA);
+  const totalKnown = (cTons!==null) || (sTons!==null);
+  const totalVal = (typeof cTons==='number'?cTons:0) + (typeof sTons==='number'?sTons:0);
+  const wrap = el('div', {class:'card', style:'background:var(--asphalt-900);border:none;'});
+  wrap.appendChild(el('h3', {style:'color:var(--safety-yellow);margin:0 0 10px;font-size:13px;display:flex;align-items:center;gap:6px;'},
+    el('span',{html:ICONS.factory}), T_.totalProduction));
+  const grid = el('div', {class:'summary-grid'});
+  grid.appendChild(el('div',{class:'summary-item', style:'background:var(--asphalt-800);'},
+    el('div',{class:'si-label', style:'color:var(--stone-300);'},T_.crusherProduction),
+    el('div',{class:'si-val', style:'color:#fff;'}, cTons===null ? '—' : (cTons==='NA' ? T_.notWorked : cTons + ' ' + T_.tonsUnit))));
+  grid.appendChild(el('div',{class:'summary-item', style:'background:var(--asphalt-800);'},
+    el('div',{class:'si-label', style:'color:var(--stone-300);'},T_.secondaryProduction),
+    el('div',{class:'si-val', style:'color:#fff;'}, sTons===null ? '—' : (sTons==='NA' ? T_.notWorked : sTons + ' ' + T_.tonsUnit))));
+  wrap.appendChild(grid);
+  wrap.appendChild(el('div', {style:'margin-top:10px;text-align:center;background:var(--safety-orange);color:#1C1C1E;border-radius:10px;padding:10px;font-weight:800;font-size:16px;'},
+    totalKnown ? (Math.round(totalVal*10)/10) + ' ' + T_.tonsUnit : '—'));
+  return wrap;
+}
+
 function renderInline(){
   const root = document.getElementById('root');
   const main = root.querySelector('main');
@@ -683,6 +768,7 @@ function renderFormPage(){
     main.appendChild(timeFieldWithNA('secondaryEndTime','secondaryEndTime','secondaryEndTimeNA'));
     main.appendChild(fieldInput('lastTruckArrival','truck','lastTruckArrival','time'));
     main.appendChild(hoursCard());
+    main.appendChild(tonsCard(state.form));
   }
   return main;
 }
@@ -843,15 +929,17 @@ function renderBottombar(){
 
 async function submitShift(){
   await translateAllPendingFaults();
+  const createdAt = state.editingId ? ((state.shifts.find(s=>s.id===state.editingId)||{}).createdAt || Date.now()) : Date.now();
   const id = state.editingId || uid();
-  const record = Object.assign({}, state.form, {id, createdAt: state.editingId ? (state.shifts.find(s=>s.id===id)||{}).createdAt || Date.now() : Date.now()});
+  const record = Object.assign({}, state.form, {id, createdAt});
   const idx = state.shifts.findIndex(s=>s.id===id);
   if(idx>=0) state.shifts[idx] = record; else state.shifts.push(record);
-  await saveShifts();
+  const ok = await saveShiftRemote(record);
+  await loadShifts();
   state.screen = 'home';
   state.editingId = null;
   render();
-  showToast(t().savedToast);
+  showToast(ok ? t().savedToast : t().saveFailed);
 }
 
 function renderView(){
@@ -930,6 +1018,7 @@ function renderView(){
     el('div',{class:'si-val'}, secondaryH===null ? '—' : (secondaryH==='NA' ? T_.notWorked : secondaryH + ' ' + T_.hoursUnit))));
   hCard.appendChild(hGrid);
   main.appendChild(hCard);
+  main.appendChild(tonsCard(s));
 
   const actions = el('div', {style:'display:flex;gap:10px;margin-top:6px;'});
   actions.appendChild(el('button', {class:'btn btn-ghost', style:'flex:1;', onclick:()=>{ state.screen='home'; state.editingId=null; render(); }}, T_.backToList));
@@ -956,7 +1045,8 @@ function renderConfirm(){
 async function confirmDelete(){
   const id = state.confirmDeleteId;
   state.shifts = state.shifts.filter(s=>s.id!==id);
-  await saveShifts();
+  await deleteShiftRemote(id);
+  await loadShifts();
   state.confirmDeleteId = null;
   state.screen = 'home';
   state.editingId = null;
@@ -1001,6 +1091,14 @@ setupPWA();
   await loadShifts();
   render();
 })();
+
+setInterval(async ()=>{
+  if(state.screen === 'home'){
+    const before = JSON.stringify(state.shifts);
+    await loadShifts();
+    if(JSON.stringify(state.shifts) !== before){ render(); }
+  }
+}, 15000);
 </script>
 </body>
 </html>
