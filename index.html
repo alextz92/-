@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="מעקב ייצור">
+<meta name="theme-color" content="#1C1C1E">
+<meta name="format-detection" content="telephone=no, date=no">
+<title>מעקב ייצור מתקן חצץ אספלט</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --asphalt-900:#1C1C1E;
+    --asphalt-800:#2A2A2D;
+    --asphalt-700:#3A3A3D;
+    --stone-100:#F3F1EC;
+    --stone-200:#E8E4DA;
+    --stone-300:#D8D2C5;
+    --stone-500:#8B8A85;
+    --safety-orange:#E8790C;
+    --safety-orange-dark:#C4630A;
+    --safety-yellow:#FFC229;
+    --text-dark:#201F1D;
+    --text-light:#F5F3EE;
+    --success:#3F8F5F;
+    --success-bg:#E4F2E9;
+    --danger:#C0392B;
+    --danger-bg:#FAE6E4;
+    --radius:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  button{-webkit-appearance:none;appearance:none;font:inherit;-webkit-user-select:none;user-select:none;}
+  input,select,textarea{-webkit-user-select:text;user-select:text;}
+  html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
+  html,body{margin:0;padding:0;overscroll-behavior:none;height:100%;}
+  body{
+    background:var(--asphalt-900);
+    color:var(--text-dark);
+    font-family:'Rubik',sans-serif;
+    min-height:100vh;
+    min-height:100dvh;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+    overscroll-behavior-y:contain;
+  }
+  body.lang-ar{font-family:'Tajawal',sans-serif;}
+  #root{
+    max-width:520px;margin:0 auto;min-height:100vh;min-height:100dvh;background:var(--stone-100);
+    display:flex;flex-direction:column;box-shadow:0 0 40px rgba(0,0,0,.4);
+    padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);
+    overflow-x:hidden;
+  }
+
+  header.topbar{
+    background:var(--asphalt-900);
+    color:var(--text-light);
+    padding:calc(16px + env(safe-area-inset-top)) 18px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    position:relative;
+    background-image:repeating-linear-gradient(135deg, rgba(255,255,255,0.02) 0 8px, transparent 8px 16px);
+    border-bottom:4px solid var(--safety-orange);
+  }
+  .brand{display:flex;align-items:center;gap:10px;min-width:0;}
+  .brand-icon{
+    width:34px;height:34px;flex:none;border-radius:8px;
+    background:var(--safety-orange);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .brand-icon svg{width:20px;height:20px;}
+  .brand-title{font-size:14px;font-weight:700;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .brand-sub{font-size:11px;color:var(--stone-300);opacity:.8;}
+  .lang-switch{
+    display:flex;background:rgba(255,255,255,.08);border-radius:999px;padding:3px;flex:none;
+  }
+  .lang-switch button{
+    border:none;background:transparent;color:var(--stone-300);
+    font-family:inherit;font-size:13px;font-weight:700;padding:9px 15px;border-radius:999px;cursor:pointer;
+    min-height:38px;
+  }
+  .lang-switch button.active{background:var(--safety-orange);color:#1C1C1E;}
+
+  .stepper{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 22px 6px;
+    background:var(--stone-100);
+  }
+  .step-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;position:relative;}
+  .step-line{
+    position:absolute;top:15px;height:0;left:0;right:0;
+    border-top:3px dashed var(--stone-300);
+    z-index:0;
+  }
+  .step-wrap:first-child .step-line{right:50%;}
+  .step-wrap:last-child .step-line{left:50%;}
+  .step-dot{
+    width:32px;height:32px;border-radius:50%;background:var(--stone-200);border:2px solid var(--stone-300);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--stone-500);
+    z-index:1;transition:.15s;
+  }
+  .step-wrap.done .step-dot{background:var(--success);border-color:var(--success);color:#fff;}
+  .step-wrap.active .step-dot{background:var(--safety-orange);border-color:var(--safety-orange-dark);color:#1C1C1E;}
+  .step-wrap.done .step-line, .step-wrap.active .step-line{border-top-color:var(--safety-orange);}
+  .step-label{font-size:10.5px;color:var(--stone-500);font-weight:600;text-align:center;}
+  .step-wrap.active .step-label{color:var(--text-dark);}
+
+  main{flex:1;padding:18px 18px calc(100px + env(safe-area-inset-bottom));}
+  .page-title{
+    font-size:17px;font-weight:700;margin:2px 0 16px;
+    display:flex;align-items:center;gap:8px;color:var(--asphalt-900);
+    padding-bottom:10px;border-bottom:2px solid var(--stone-300);
+  }
+  .page-title .dash{width:6px;height:22px;border-radius:3px;background:var(--safety-orange);flex:none;}
+
+  .field{margin-bottom:16px;}
+  .field label{
+    display:flex;align-items:center;gap:6px;
+    font-size:13px;font-weight:600;color:var(--asphalt-700);margin-bottom:6px;
+  }
+  .field label .ic{flex:none;opacity:.65;}
+  .field input, .field select{
+    width:100%;padding:11px 12px;border-radius:10px;border:1.5px solid var(--stone-300);
+    background:#fff;font-family:inherit;font-size:16px;color:var(--text-dark);
+    -webkit-appearance:none;appearance:none;
+  }
+  .field input:focus, .field select:focus{outline:none;border-color:var(--safety-orange);}
+  .field select, .entry-row .mini-field select{
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238B8A85' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat:no-repeat;background-position:left 10px center;background-size:16px;padding-left:34px;
+  }
+  .field.error input, .field.error select{border-color:var(--danger);}
+  .field-err{font-size:11.5px;color:var(--danger);margin-top:4px;display:none;}
+  .field.error .field-err{display:block;}
+
+  .card{
+    background:#fff;border:1px solid var(--stone-300);border-radius:var(--radius);
+    padding:14px;margin-bottom:14px;
+  }
+
+  .row-table{display:flex;flex-direction:column;gap:10px;}
+  .table-head-hint{font-size:11.5px;color:var(--stone-500);margin-bottom:8px;}
+  .entry-row{
+    background:#fff;border:1px solid var(--stone-300);border-radius:12px;padding:12px;position:relative;
+  }
+  .entry-row .row-num{
+    position:absolute;top:-9px;inset-inline-start:10px;background:var(--asphalt-900);color:var(--safety-yellow);
+    font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;
+  }
+  .entry-row .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;}
+  .entry-row .mini-field label{font-size:11px;color:var(--stone-500);font-weight:600;margin-bottom:3px;display:block;}
+  .entry-row .mini-field input, .entry-row .mini-field select{
+    width:100%;padding:8px 9px;border-radius:8px;border:1.5px solid var(--stone-300);font-family:inherit;font-size:16px;
+    -webkit-appearance:none;appearance:none;
+  }
+  .row-actions{display:flex;justify-content:flex-end;margin-top:8px;}
+  .del-btn{
+    border:none;background:var(--danger-bg);color:var(--danger);font-family:inherit;font-weight:700;
+    font-size:12.5px;padding:9px 13px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:4px;
+    min-height:38px;
+  }
+  .add-btn{
+    width:100%;border:2px dashed var(--stone-300);background:transparent;color:var(--asphalt-700);
+    font-family:inherit;font-weight:700;font-size:14px;padding:12px;border-radius:12px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px;
+  }
+  .add-btn:active{background:var(--stone-200);}
+  .empty-hint{
+    text-align:center;color:var(--stone-500);font-size:13px;padding:18px 10px;border:1.5px dashed var(--stone-300);border-radius:12px;
+  }
+
+  nav.bottombar{
+    position:sticky;bottom:0;background:var(--stone-100);border-top:1.5px solid var(--stone-300);
+    padding:12px 18px calc(12px + env(safe-area-inset-bottom));
+    display:flex;gap:10px;
+  }
+  .btn{
+    flex:1;padding:14px;border-radius:12px;border:none;font-family:inherit;font-weight:700;font-size:15px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .btn-primary{background:var(--safety-orange);color:#1C1C1E;}
+  .btn-primary:active{background:var(--safety-orange-dark);}
+  .btn-ghost{background:var(--stone-200);color:var(--asphalt-900);flex:0 0 34%;}
+  .btn-ghost:active{background:var(--stone-300);}
+  .btn-success{background:var(--success);color:#fff;}
+
+  .home-header{padding:20px 18px 6px;}
+  .home-title{font-size:20px;font-weight:800;color:var(--asphalt-900);}
+  .home-sub{font-size:13px;color:var(--stone-500);margin-top:4px;}
+  .newshift-btn{
+    margin:16px 18px;padding:16px;border-radius:14px;border:none;background:var(--asphalt-900);color:var(--text-light);
+    font-family:inherit;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+    background-image:repeating-linear-gradient(135deg, rgba(255,255,255,0.03) 0 8px, transparent 8px 16px);
+    border-bottom:3px solid var(--safety-orange);
+  }
+  .list-title{padding:6px 18px;font-size:12.5px;font-weight:700;color:var(--stone-500);text-transform:uppercase;letter-spacing:.03em;}
+  .shift-list{padding:0 18px 20px;display:flex;flex-direction:column;gap:10px;}
+  .shift-card{
+    background:#fff;border:1px solid var(--stone-300);border-radius:12px;padding:13px 14px;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;
+  }
+  .shift-card .sc-main{min-width:0;}
+  .shift-card .sc-date{font-weight:700;font-size:14.5px;}
+  .shift-card .sc-op{font-size:12.5px;color:var(--stone-500);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sc-chevron{flex:none;color:var(--stone-500);}
+  .empty-state{margin:10px 18px 20px;text-align:center;padding:30px 16px;border:1.5px dashed var(--stone-300);border-radius:14px;color:var(--stone-500);font-size:13.5px;}
+
+  .summary-block{margin-bottom:16px;}
+  .summary-block h3{
+    font-size:13px;font-weight:700;color:var(--safety-orange-dark);margin:0 0 8px;
+    display:flex;align-items:center;gap:6px;
+  }
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .summary-item{background:var(--stone-100);border-radius:10px;padding:9px 11px;}
+  .summary-item .si-label{font-size:11px;color:var(--stone-500);font-weight:600;}
+  .summary-item .si-val{font-size:14.5px;font-weight:700;margin-top:2px;}
+  .mini-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px;}
+  .mini-table th{background:var(--stone-200);padding:6px 6px;font-weight:700;text-align:center;}
+  .mini-table td{padding:6px 6px;text-align:center;border-bottom:1px solid var(--stone-200);}
+
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    background:var(--asphalt-900);color:var(--text-light);padding:12px 20px;border-radius:999px;
+    font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px;z-index:50;
+    box-shadow:0 6px 20px rgba(0,0,0,.3);border:1.5px solid var(--safety-orange);
+  }
+  .confirm-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:60;padding:20px;
+  }
+  .confirm-box{background:#fff;border-radius:16px;padding:20px;max-width:340px;width:100%;text-align:center;}
+  .confirm-box p{font-size:15px;font-weight:600;margin:0 0 16px;}
+  .confirm-actions{display:flex;gap:10px;}
+
+  @media (max-width:380px){
+    .step-label{display:none;}
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const T = {
+  he: {
+    appTitle:"מעקב ייצור מתקן חצץ אספלט",
+    appSub:"קראשר ומערך משני",
+    homeTitle:"משמרות ייצור",
+    homeSub:"מעקב יומי אחר קראשר, משאיות ותקלות",
+    newShift:"+ משמרת חדשה",
+    savedShiftsTitle:"משמרות שמורות",
+    noShifts:"אין משמרות שמורות עדיין. לחצו על \"משמרת חדשה\" כדי להתחיל.",
+    step1:"פתיחה", step2:"משאיות", step3:"תקלות", step4:"סיום",
+    page1Title:"פתיחת משמרת",
+    date:"תאריך", operatorName:"שם המפעיל",
+    crusherStartClock:"שעון קראשר בתחילת משמרת",
+    crusherStartTime:"שעת הפעלת הקראשר",
+    secondaryStartClock:"שעון מערך משני בתחילת משמרת",
+    secondaryStartTime:"שעת הפעלת מערך משני",
+    firstTruckArrival:"שעת הגעה משאית ראשונה",
+    page2Title:"כמות משאיות לפי שעה",
+    fromHour:"משעה", toHour:"עד שעה", truckCount:"כמות נגלות", shovelLoadsCount:"כמות העמסות עם שופל",
+    addRow:"הוסף שורה", noRows:"עדיין לא נוספו שורות",
+    page3Title:"תקלות מפעל/קראשר",
+    faultType:"סוג התקלה", faultDetail:"פירוט התקלה",
+    faultOther:"פירוט חופשי", noFaults:"לא דווחו תקלות במשמרת זו",
+    page4Title:"סיום משמרת",
+    crusherEndClock:"שעון קראשר בסוף משמרת",
+    crusherEndTime:"שעת כיבוי הקראשר",
+    secondaryEndClock:"שעון מערך משני בסוף משמרת",
+    secondaryEndTime:"שעת כיבוי מערך משני",
+    lastTruckArrival:"שעת הגעה משאית אחרונה",
+    back:"חזור", next:"הבא", submit:"שמור משמרת",
+    delete:"מחק", required:"שדה חובה",
+    savedToast:"המשמרת נשמרה בהצלחה",
+    deletedToast:"המשמרת נמחקה",
+    confirmDeleteQ:"למחוק את המשמרת הזו?",
+    yes:"כן, מחק", no:"ביטול",
+    viewTitle:"פרטי משמרת",
+    backToList:"חזרה לרשימה",
+    deleteShift:"מחיקת משמרת",
+    faultTypes:{electrical:"חשמלי", mechanical:"מכני", hydraulic:"הידראולי", other:"אחר"},
+    homeCounts: (n)=> n===1 ? "משמרת אחת" : n+" משמרות",
+    truckSummary:"סה\"כ משאיות",
+    faultSummary:"סה\"כ תקלות",
+    openingData:"נתוני פתיחה",
+    closingData:"נתוני סיום",
+    row:"שורה",
+    notWorked:"לא עבד",
+    crusherWorkedHours:"שעות עבודה בפועל — קראשר",
+    secondaryWorkedHours:"שעות עבודה בפועל — מערך משני",
+    hoursUnit:"שעות",
+    translating:"מתרגם...",
+    translationLabelToAr:"תרגום לערבית",
+    translationLabelToHe:"תרגום לעברית",
+    translationFailed:"לא ניתן היה לתרגם"
+  },
+  ar: {
+    appTitle:"متابعة إنتاج محطة الكسّارة والإسفلت",
+    appSub:"الكسّارة والمنظومة الثانوية",
+    homeTitle:"شفتات الإنتاج",
+    homeSub:"متابعة يومية للكسّارة، السيارات، والأعطال",
+    newShift:"+ شفت جديد",
+    savedShiftsTitle:"الشفتات المحفوظة",
+    noShifts:"ما في شفتات محفوظة لهلق. اضغط \"شفت جديد\" لتبدأ.",
+    step1:"افتتاح", step2:"السيارات", step3:"الأعطال", step4:"ختام",
+    page1Title:"افتتاح الشفت",
+    date:"التاريخ", operatorName:"اسم المشغّل",
+    crusherStartClock:"عداد الكسّارة بداية الشفت",
+    crusherStartTime:"وقت تشغيل الكسّارة",
+    secondaryStartClock:"عداد المنظومة الثانوية بداية الشفت",
+    secondaryStartTime:"وقت تشغيل المنظومة الثانوية",
+    firstTruckArrival:"وقت وصول أول سيارة",
+    page2Title:"عدد السيارات حسب الساعة",
+    fromHour:"من الساعة", toHour:"لغاية الساعة", truckCount:"عدد النقلات", shovelLoadsCount:"عدد التحميلات بالشفل",
+    addRow:"إضافة سطر", noRows:"لسا ما ضفت أي سطر",
+    page3Title:"أعطال المصنع/الكسّارة",
+    faultType:"نوع العطل", faultDetail:"تفاصيل العطل",
+    faultOther:"تفاصيل حرة", noFaults:"ما في أعطال متسجلة بهذا الشفت",
+    page4Title:"ختام الشفت",
+    crusherEndClock:"عداد الكسّارة نهاية الشفت",
+    crusherEndTime:"وقت تسكير الكسّارة",
+    secondaryEndClock:"عداد المنظومة الثانوية نهاية الشفت",
+    secondaryEndTime:"وقت تسكير المنظومة الثانوية",
+    lastTruckArrival:"وقت وصول آخر سيارة",
+    back:"رجوع", next:"التالي", submit:"حفظ الشفت",
+    delete:"حذف", required:"هاي الخانة إلزامية",
+    savedToast:"تم حفظ الشفت بنجاح",
+    deletedToast:"تم حذف الشفت",
+    confirmDeleteQ:"بدك تحذف هالشفت؟",
+    yes:"أيوا، احذف", no:"إلغاء",
+    viewTitle:"تفاصيل الشفت",
+    backToList:"رجوع للقائمة",
+    deleteShift:"حذف الشفت",
+    faultTypes:{electrical:"كهربائي", mechanical:"ميكانيكي", hydraulic:"هيدروليكي", other:"غير هيك"},
+    homeCounts: (n)=> n===1 ? "شفت وحد" : n+" شفتات",
+    truckSummary:"مجموع السيارات",
+    faultSummary:"مجموع الأعطال",
+    openingData:"بيانات الافتتاح",
+    closingData:"بيانات الختام",
+    row:"سطر",
+    notWorked:"ما اشتغلت",
+    crusherWorkedHours:"ساعات التشغيل الفعلية — الكسّارة",
+    secondaryWorkedHours:"ساعات التشغيل الفعلية — المنظومة الثانوية",
+    hoursUnit:"ساعات",
+    translating:"عم يترجم...",
+    translationLabelToAr:"ترجمة للعربي",
+    translationLabelToHe:"ترجمة للعبري",
+    translationFailed:"ما قدرنا نترجم"
+  }
+};
+
+const ICONS = {
+  logo:'<svg viewBox="0 0 24 24" fill="none" stroke="#1C1C1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h1v-5l2-5h9l3 5v5h1"/><circle cx="7.5" cy="17.5" r="1.8" fill="#1C1C1E"/><circle cx="16.5" cy="17.5" r="1.8" fill="#1C1C1E"/></svg>',
+  gauge:'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12l4-4"/><circle cx="12" cy="12" r="9"/><path d="M6 15a7 7 0 0 1 12 0"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>',
+  user:'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c1.5-4 4.5-6 7.5-6s6 2 7.5 6"/></svg>',
+  calendar:'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  truck:'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16V7h9v9"/><path d="M12 11h4l3 3v2h-2"/><circle cx="7" cy="17.5" r="1.6"/><circle cx="17" cy="17.5" r="1.6"/></svg>',
+  alert:'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 9v5M12 17h.01"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  check:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  chevron:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>'
+};
+
+let state = {
+  lang: 'he',
+  screen: 'home',
+  step: 1,
+  editingId: null,
+  shifts: [],
+  errors: {},
+  confirmDeleteId: null,
+  form: emptyForm()
+};
+
+function emptyForm(){
+  return {
+    date:'', operatorName:'',
+    crusherStartClock:'', crusherStartTime:'', crusherStartTimeNA:false,
+    secondaryStartClock:'', secondaryStartTime:'', secondaryStartTimeNA:false,
+    firstTruckArrival:'',
+    truckRows: [],
+    faultRows: [],
+    crusherEndClock:'', crusherEndTime:'', crusherEndTimeNA:false,
+    secondaryEndClock:'', secondaryEndTime:'', secondaryEndTimeNA:false,
+    lastTruckArrival:''
+  };
+}
+
+function computeHours(startClock, endClock){
+  const s = parseFloat(startClock), e = parseFloat(endClock);
+  if(isNaN(s) || isNaN(e)) return null;
+  const diff = e - s;
+  if(diff < 0) return null;
+  return Math.round(diff * 10) / 10;
+}
+
+function computeHoursFromTimes(startTime, endTime, startNA, endNA){
+  if(startNA || endNA) return 'NA';
+  if(!startTime || !endTime) return null;
+  const sp = startTime.split(':').map(Number), ep = endTime.split(':').map(Number);
+  if(sp.length<2 || ep.length<2 || sp.some(isNaN) || ep.some(isNaN)) return null;
+  let startMin = sp[0]*60+sp[1], endMin = ep[0]*60+ep[1];
+  let diff = endMin - startMin;
+  if(diff <= 0) diff += 24*60;
+  return Math.round((diff/60)*10)/10;
+}
+
+const translateCache = {};
+async function translateText(text, fromLang){
+  const trimmed = (text||'').trim();
+  if(!trimmed) return '';
+  const toLang = fromLang === 'he' ? 'ar' : 'he';
+  const cacheKey = fromLang + '::' + trimmed;
+  if(translateCache[cacheKey]) return translateCache[cacheKey];
+  const prompt = fromLang === 'he'
+    ? 'תרגם את הטקסט הבא מעברית לערבית פלסטינית מדוברת (לא ספרותית, כפי שמדברים אנשי תעשייה בשטח, כתיב טבעי). החזר אך ורק את התרגום עצמו, בלי הסברים ובלי מירכאות.\n\nטקסט: ' + trimmed
+    : 'ترجم النص التالي من العربية الفلسطينية المحكية إلى العبرية الواضحة، متل ما بتنكتب بتقارير المصنع. رجّع بس الترجمة، بدون أي شرح وبدون علامات اقتباس.\n\nالنص: ' + trimmed;
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 300,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+    const data = await response.json();
+    const textOut = (data.content||[]).map(b=>b.text||'').join('').trim();
+    if(textOut){ translateCache[cacheKey] = textOut; }
+    return textOut;
+  }catch(e){
+    return '';
+  }
+}
+
+function t(){ return T[state.lang]; }
+function uid(){ return 'r' + Math.random().toString(36).slice(2,9); }
+
+async function loadShifts(){
+  try{
+    const res = await window.storage.get('shifts', false);
+    state.shifts = res && res.value ? JSON.parse(res.value) : [];
+  }catch(e){
+    state.shifts = [];
+  }
+}
+async function saveShifts(){
+  try{
+    await window.storage.set('shifts', JSON.stringify(state.shifts), false);
+  }catch(e){}
+}
+
+function showToast(msg){
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(()=>{ el.remove(); }, 2200);
+}
+
+function fmtDate(d){
+  if(!d) return '—';
+  const parts = d.split('-');
+  if(parts.length===3) return parts[2]+'.'+parts[1]+'.'+parts[0];
+  return d;
+}
+
+function el(tag, attrs, ...children){
+  const e = document.createElement(tag);
+  for(const k in (attrs||{})){
+    const v = attrs[k];
+    if(k==='class') e.className = v;
+    else if(k==='html') e.innerHTML = v;
+    else if(k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if(v === null || v === undefined || v === false){ /* skip: no attribute */ }
+    else if(v === true) e.setAttribute(k, '');
+    else e.setAttribute(k, v);
+  }
+  children.flat().forEach(c=>{
+    if(c===null||c===undefined) return;
+    if(typeof c === 'string') e.appendChild(document.createTextNode(c));
+    else e.appendChild(c);
+  });
+  return e;
+}
+
+function render(){
+  document.body.className = state.lang==='ar' ? 'lang-ar' : '';
+  document.title = t().appTitle;
+  const root = document.getElementById('root');
+  root.innerHTML = '';
+  root.appendChild(renderTopbar());
+  if(state.screen === 'home'){
+    root.appendChild(renderHome());
+  } else if(state.screen === 'form'){
+    root.appendChild(renderStepper());
+    root.appendChild(renderFormPage());
+    root.appendChild(renderBottombar());
+  } else if(state.screen === 'view'){
+    root.appendChild(renderView());
+  }
+  if(state.confirmDeleteId){
+    root.appendChild(renderConfirm());
+  }
+}
+
+function renderTopbar(){
+  const T_ = t();
+  const header = el('header', {class:'topbar'},
+    el('div', {class:'brand'},
+      el('div', {class:'brand-icon', html:ICONS.logo}),
+      el('div', {},
+        el('div', {class:'brand-title'}, T_.appTitle),
+        el('div', {class:'brand-sub'}, T_.appSub)
+      )
+    ),
+    el('div', {class:'lang-switch'},
+      el('button', {class: state.lang==='he'?'active':'', onclick:()=>{ state.lang='he'; render(); translateAllPendingFaults().then(render); }}, 'עב'),
+      el('button', {class: state.lang==='ar'?'active':'', onclick:()=>{ state.lang='ar'; render(); translateAllPendingFaults().then(render); }}, 'عر')
+    )
+  );
+  return header;
+}
+
+function renderHome(){
+  const T_ = t();
+  const frag = document.createDocumentFragment();
+  const wrap = el('div', {});
+  wrap.appendChild(el('div', {class:'home-header'},
+    el('div', {class:'home-title'}, T_.homeTitle),
+    el('div', {class:'home-sub'}, T_.homeSub)
+  ));
+  wrap.appendChild(el('button', {class:'newshift-btn', onclick:startNewShift},
+    el('span', {html:ICONS.plus}), T_.newShift
+  ));
+  const sorted = [...state.shifts].sort((a,b)=> (b.createdAt||0)-(a.createdAt||0));
+  if(sorted.length === 0){
+    wrap.appendChild(el('div', {class:'empty-state'}, T_.noShifts));
+  } else {
+    wrap.appendChild(el('div', {class:'list-title'}, T_.savedShiftsTitle + ' · ' + T_.homeCounts(sorted.length)));
+    const list = el('div', {class:'shift-list'});
+    sorted.forEach(s=>{
+      const truckTotal = (s.truckRows||[]).reduce((a,r)=>a+(Number(r.truckCount)||0),0);
+      list.appendChild(el('div', {class:'shift-card', onclick:()=>{ state.screen='view'; state.editingId=s.id; render(); }},
+        el('div', {class:'sc-main'},
+          el('div', {class:'sc-date'}, fmtDate(s.date)),
+          el('div', {class:'sc-op'}, (s.operatorName||'—') + ' · ' + T_.truckSummary + ': ' + truckTotal)
+        ),
+        el('div', {class:'sc-chevron', html: state.lang==='ar' ? mirrorIcon(ICONS.chevron) : ICONS.chevron})
+      ));
+    });
+    wrap.appendChild(list);
+  }
+  frag.appendChild(wrap);
+  return frag;
+}
+
+function mirrorIcon(svg){
+  return svg.replace('<svg', '<svg style="transform:scaleX(-1)"');
+}
+
+function startNewShift(){
+  state.form = emptyForm();
+  state.editingId = null;
+  state.step = 1;
+  state.errors = {};
+  state.screen = 'form';
+  render();
+}
+
+const STEP_KEYS = ['step1','step2','step3','step4'];
+
+function renderStepper(){
+  const T_ = t();
+  const bar = el('div', {class:'stepper'});
+  for(let i=1;i<=4;i++){
+    const wrap = el('div', {class:'step-wrap' + (i<state.step?' done':'') + (i===state.step?' active':'')});
+    wrap.appendChild(el('div', {class:'step-line'}));
+    wrap.appendChild(el('div', {class:'step-dot'}, i<state.step ? '' : String(i)));
+    if(i<state.step){ wrap.querySelector('.step-dot').innerHTML = ICONS.check; }
+    wrap.appendChild(el('div', {class:'step-label'}, T_[STEP_KEYS[i-1]]));
+    bar.appendChild(wrap);
+  }
+  return bar;
+}
+
+function fieldInput(labelKey, iconKey, key, type, extra){
+  const T_ = t();
+  const hasErr = !!state.errors[key];
+  const wrap = el('div', {class:'field' + (hasErr?' error':'')});
+  wrap.appendChild(el('label', {},
+    el('span', {class:'ic', html: ICONS[iconKey]}),
+    T_[labelKey]
+  ));
+  const input = el('input', Object.assign({
+    type: type,
+    value: state.form[key] || '',
+    oninput: (e)=>{ state.form[key] = e.target.value; if(state.errors[key]){ delete state.errors[key]; renderInline(); } }
+  }, extra||{}));
+  wrap.appendChild(input);
+  wrap.appendChild(el('div', {class:'field-err'}, T_.required));
+  return wrap;
+}
+
+function timeFieldWithNA(labelKey, key, naKey){
+  const T_ = t();
+  const hasErr = !!state.errors[key];
+  const wrap = el('div', {class:'field' + (hasErr?' error':'')});
+  wrap.appendChild(el('label', {},
+    el('span', {class:'ic', html: ICONS.clock}),
+    T_[labelKey]
+  ));
+  const isNA = !!state.form[naKey];
+  const input = el('input', {
+    type:'time', value: state.form[key] || '', disabled: isNA ? 'disabled' : null,
+    style: isNA ? 'opacity:.5;' : '',
+    oninput:(e)=>{ state.form[key] = e.target.value; }
+  });
+  wrap.appendChild(input);
+  const naWrap = el('label', {style:'display:flex;align-items:center;gap:6px;margin-top:8px;font-size:13px;font-weight:600;color:var(--asphalt-700);cursor:pointer;'});
+  const cb = el('input', {type:'checkbox', style:'width:16px;height:16px;', checked: isNA ? 'checked' : null,
+    onchange:(e)=>{ state.form[naKey] = e.target.checked; if(e.target.checked){ state.form[key]=''; } renderInline(); }});
+  naWrap.appendChild(cb);
+  naWrap.appendChild(document.createTextNode(T_.notWorked));
+  wrap.appendChild(naWrap);
+  return wrap;
+}
+
+function hoursCard(){
+  const T_ = t();
+  const crusherH = computeHoursFromTimes(state.form.crusherStartTime, state.form.crusherEndTime, state.form.crusherStartTimeNA, state.form.crusherEndTimeNA);
+  const secondaryH = computeHoursFromTimes(state.form.secondaryStartTime, state.form.secondaryEndTime, state.form.secondaryStartTimeNA, state.form.secondaryEndTimeNA);
+  const wrap = el('div', {class:'card', style:'background:var(--stone-100);border-style:dashed;'});
+  const grid = el('div', {class:'summary-grid'});
+  grid.appendChild(el('div',{class:'summary-item'}, el('div',{class:'si-label'},T_.crusherWorkedHours),
+    el('div',{class:'si-val'}, crusherH===null ? '—' : (crusherH==='NA' ? T_.notWorked : crusherH + ' ' + T_.hoursUnit))));
+  grid.appendChild(el('div',{class:'summary-item'}, el('div',{class:'si-label'},T_.secondaryWorkedHours),
+    el('div',{class:'si-val'}, secondaryH===null ? '—' : (secondaryH==='NA' ? T_.notWorked : secondaryH + ' ' + T_.hoursUnit))));
+  wrap.appendChild(grid);
+  return wrap;
+}
+
+function renderInline(){
+  const root = document.getElementById('root');
+  const main = root.querySelector('main');
+  if(main){
+    const newMain = renderFormPage();
+    main.replaceWith(newMain);
+  }
+}
+
+function renderFormPage(){
+  const T_ = t();
+  const main = el('main', {});
+  if(state.step === 1){
+    main.appendChild(el('div', {class:'page-title'}, el('span',{class:'dash'}), T_.page1Title));
+    main.appendChild(fieldInput('date','calendar','date','date'));
+    main.appendChild(fieldInput('operatorName','user','operatorName','text',{placeholder: state.lang==='he'?'לדוגמה: יוסי כהן':'مثال: محمد أحمد'}));
+    main.appendChild(fieldInput('crusherStartClock','gauge','crusherStartClock','number',{step:'0.1', inputmode:'decimal', placeholder:'0.0'}));
+    main.appendChild(timeFieldWithNA('crusherStartTime','crusherStartTime','crusherStartTimeNA'));
+    main.appendChild(fieldInput('secondaryStartClock','gauge','secondaryStartClock','number',{step:'0.1', inputmode:'decimal', placeholder:'0.0'}));
+    main.appendChild(timeFieldWithNA('secondaryStartTime','secondaryStartTime','secondaryStartTimeNA'));
+    main.appendChild(fieldInput('firstTruckArrival','truck','firstTruckArrival','time'));
+  } else if(state.step === 2){
+    main.appendChild(el('div', {class:'page-title'}, el('span',{class:'dash'}), T_.page2Title));
+    main.appendChild(renderTruckRows());
+  } else if(state.step === 3){
+    main.appendChild(el('div', {class:'page-title'}, el('span',{class:'dash'}), T_.page3Title));
+    main.appendChild(renderFaultRows());
+  } else if(state.step === 4){
+    main.appendChild(el('div', {class:'page-title'}, el('span',{class:'dash'}), T_.page4Title));
+    main.appendChild(fieldInput('crusherEndClock','gauge','crusherEndClock','number',{step:'0.1', inputmode:'decimal', placeholder:'0.0'}));
+    main.appendChild(timeFieldWithNA('crusherEndTime','crusherEndTime','crusherEndTimeNA'));
+    main.appendChild(fieldInput('secondaryEndClock','gauge','secondaryEndClock','number',{step:'0.1', inputmode:'decimal', placeholder:'0.0'}));
+    main.appendChild(timeFieldWithNA('secondaryEndTime','secondaryEndTime','secondaryEndTimeNA'));
+    main.appendChild(fieldInput('lastTruckArrival','truck','lastTruckArrival','time'));
+    main.appendChild(hoursCard());
+  }
+  return main;
+}
+
+function renderTruckRows(){
+  const T_ = t();
+  const wrap = el('div', {});
+  wrap.appendChild(el('div', {class:'table-head-hint'}, T_.fromHour + ' / ' + T_.toHour + ' / ' + T_.truckCount + ' / ' + T_.shovelLoadsCount));
+  if(state.form.truckRows.length===0){
+    wrap.appendChild(el('div', {class:'empty-hint'}, T_.noRows));
+  }
+  state.form.truckRows.forEach((row, idx)=>{
+    const card = el('div', {class:'entry-row'});
+    card.appendChild(el('div', {class:'row-num'}, T_.row + ' ' + (idx+1)));
+    const grid = el('div', {class:'grid2'});
+    grid.appendChild(miniField(T_.fromHour, 'time', row.fromHour, v=>{ row.fromHour=v; }));
+    grid.appendChild(miniField(T_.toHour, 'time', row.toHour, v=>{ row.toHour=v; }));
+    grid.appendChild(miniField(T_.truckCount, 'number', row.truckCount, v=>{ row.truckCount=v; }, {min:'0', inputmode:'numeric'}));
+    grid.appendChild(miniField(T_.shovelLoadsCount, 'number', row.shovelLoadsCount, v=>{ row.shovelLoadsCount=v; }, {min:'0', inputmode:'numeric'}));
+    card.appendChild(grid);
+    const actions = el('div', {class:'row-actions'});
+    actions.appendChild(el('button', {class:'del-btn', onclick:()=>{ state.form.truckRows.splice(idx,1); renderInline(); }},
+      el('span',{html:ICONS.trash}), T_.delete));
+    card.appendChild(actions);
+    wrap.appendChild(card);
+  });
+  wrap.appendChild(el('button', {class:'add-btn', onclick:()=>{ state.form.truckRows.push({id:uid(), fromHour:'', toHour:'', truckCount:'', shovelLoadsCount:''}); renderInline(); }},
+    el('span',{html:ICONS.plus}), T_.addRow));
+  return wrap;
+}
+
+function renderFaultRows(){
+  const T_ = t();
+  const wrap = el('div', {});
+  if(state.form.faultRows.length===0){
+    wrap.appendChild(el('div', {class:'empty-hint'}, T_.noFaults));
+  }
+  state.form.faultRows.forEach((row, idx)=>{
+    const card = el('div', {class:'entry-row'});
+    card.appendChild(el('div', {class:'row-num'}, T_.row + ' ' + (idx+1)));
+    const grid = el('div', {class:'grid2'});
+    grid.appendChild(miniField(T_.fromHour, 'time', row.fromHour, v=>{ row.fromHour=v; }));
+    grid.appendChild(miniField(T_.toHour, 'time', row.toHour, v=>{ row.toHour=v; }));
+    const typeField = el('div', {class:'mini-field'});
+    typeField.appendChild(el('label', {}, T_.faultType));
+    const sel = el('select', {onchange:(e)=>{ row.faultType = e.target.value; }});
+    ['electrical','mechanical','hydraulic','other'].forEach(k=>{
+      sel.appendChild(el('option', {value:k, selected: row.faultType===k ? 'selected': null}, T_.faultTypes[k]));
+    });
+    sel.value = row.faultType || 'electrical';
+    if(!row.faultType) row.faultType = 'electrical';
+    typeField.appendChild(sel);
+    grid.appendChild(typeField);
+    grid.appendChild(el('div',{}));
+    card.appendChild(grid);
+    const detailField = el('div', {class:'mini-field', style:'margin-top:8px;'});
+    detailField.appendChild(el('label', {}, T_.faultDetail));
+    const currentKey = state.lang === 'he' ? 'faultDetailHe' : 'faultDetailAr';
+    const otherKey = state.lang === 'he' ? 'faultDetailAr' : 'faultDetailHe';
+    const otherLabel = state.lang === 'he' ? T_.translationLabelToAr : T_.translationLabelToHe;
+    detailField.appendChild(el('input', {type:'text', value: row[currentKey]||'', placeholder: T_.faultOther,
+      oninput:(e)=>{ row[currentKey] = e.target.value; },
+      onblur:(e)=>{ triggerFaultTranslation(row, state.lang, currentKey, otherKey); }
+    }));
+    const preview = el('div', {class:'translated-preview', style:'font-size:12px;color:var(--stone-500);margin-top:5px;min-height:15px;'});
+    if(row.translating){
+      preview.textContent = T_.translating;
+    } else if(row[otherKey]){
+      preview.textContent = otherLabel + ': ' + row[otherKey];
+    } else if(row.translateFailed){
+      preview.textContent = T_.translationFailed;
+    }
+    detailField.appendChild(preview);
+    card.appendChild(detailField);
+    const actions = el('div', {class:'row-actions'});
+    actions.appendChild(el('button', {class:'del-btn', onclick:()=>{ state.form.faultRows.splice(idx,1); renderInline(); }},
+      el('span',{html:ICONS.trash}), T_.delete));
+    card.appendChild(actions);
+    wrap.appendChild(card);
+  });
+  wrap.appendChild(el('button', {class:'add-btn', onclick:()=>{ state.form.faultRows.push({id:uid(), fromHour:'', toHour:'', faultType:'electrical', faultDetailHe:'', faultDetailAr:'', translating:false}); renderInline(); }},
+    el('span',{html:ICONS.plus}), T_.addRow));
+  return wrap;
+}
+
+async function triggerFaultTranslation(row, sourceLang, currentKey, otherKey){
+  const text = (row[currentKey]||'').trim();
+  if(!text){ row[otherKey] = ''; row.translateFailed = false; renderInline(); return; }
+  if(row.lastTranslatedSource === text && row[otherKey]) return;
+  row.translating = true;
+  row.translateFailed = false;
+  renderInline();
+  const result = await translateText(text, sourceLang);
+  row.translating = false;
+  if(result){
+    row[otherKey] = result;
+    row.lastTranslatedSource = text;
+  } else {
+    row.translateFailed = true;
+  }
+  renderInline();
+}
+
+async function translateAllPendingFaults(){
+  const rows = state.form.faultRows || [];
+  for(const row of rows){
+    if(row.faultDetailHe && !row.faultDetailAr){
+      row.translating = true;
+      const res = await translateText(row.faultDetailHe, 'he');
+      row.translating = false;
+      if(res){ row.faultDetailAr = res; row.lastTranslatedSource = row.faultDetailHe; }
+      else { row.translateFailed = true; }
+    } else if(row.faultDetailAr && !row.faultDetailHe){
+      row.translating = true;
+      const res = await translateText(row.faultDetailAr, 'ar');
+      row.translating = false;
+      if(res){ row.faultDetailHe = res; row.lastTranslatedSource = row.faultDetailAr; }
+      else { row.translateFailed = true; }
+    }
+  }
+}
+
+function miniField(label, type, val, onSet, extra){
+  const f = el('div', {class:'mini-field'});
+  f.appendChild(el('label', {}, label));
+  f.appendChild(el('input', Object.assign({type:type, value: val||''}, extra||{}, {
+    oninput:(e)=>{ onSet(e.target.value); }
+  })));
+  return f;
+}
+
+function validateStep1(){
+  state.errors = {};
+  if(!state.form.date) state.errors.date = true;
+  if(!state.form.operatorName) state.errors.operatorName = true;
+  return Object.keys(state.errors).length === 0;
+}
+
+function renderBottombar(){
+  const T_ = t();
+  const bar = el('nav', {class:'bottombar'});
+  if(state.step > 1){
+    bar.appendChild(el('button', {class:'btn btn-ghost', onclick:()=>{ state.step--; state.errors={}; render(); }}, T_.back));
+  }
+  if(state.step < 4){
+    bar.appendChild(el('button', {class:'btn btn-primary', onclick:()=>{
+      if(state.step===1 && !validateStep1()){ render(); return; }
+      const leavingFaultsStep = state.step===3;
+      state.step++; render();
+      if(leavingFaultsStep){ translateAllPendingFaults().then(()=>{ if(state.screen==='form') render(); }); }
+    }}, T_.next));
+  } else {
+    bar.appendChild(el('button', {class:'btn btn-success', onclick: submitShift},
+      el('span',{html:ICONS.check}), T_.submit));
+  }
+  return bar;
+}
+
+async function submitShift(){
+  await translateAllPendingFaults();
+  const id = state.editingId || uid();
+  const record = Object.assign({}, state.form, {id, createdAt: state.editingId ? (state.shifts.find(s=>s.id===id)||{}).createdAt || Date.now() : Date.now()});
+  const idx = state.shifts.findIndex(s=>s.id===id);
+  if(idx>=0) state.shifts[idx] = record; else state.shifts.push(record);
+  await saveShifts();
+  state.screen = 'home';
+  state.editingId = null;
+  render();
+  showToast(t().savedToast);
+}
+
+function renderView(){
+  const T_ = t();
+  const s = state.shifts.find(x=>x.id===state.editingId);
+  const main = el('main', {});
+  if(!s){ state.screen='home'; return renderHome(); }
+  main.appendChild(el('div', {class:'page-title'}, el('span',{class:'dash'}), T_.viewTitle + ' — ' + fmtDate(s.date)));
+
+  const openCard = el('div', {class:'card summary-block'});
+  openCard.appendChild(el('h3', {}, el('span',{html:ICONS.gauge}), T_.openingData));
+  const og = el('div', {class:'summary-grid'});
+  [[T_.operatorName, s.operatorName],[T_.crusherStartClock, s.crusherStartClock],
+   [T_.crusherStartTime, s.crusherStartTimeNA ? T_.notWorked : s.crusherStartTime],
+   [T_.secondaryStartClock, s.secondaryStartClock],
+   [T_.secondaryStartTime, s.secondaryStartTimeNA ? T_.notWorked : s.secondaryStartTime],
+   [T_.firstTruckArrival, s.firstTruckArrival]
+  ].forEach(([l,v])=>{
+    og.appendChild(el('div',{class:'summary-item'}, el('div',{class:'si-label'},l), el('div',{class:'si-val'}, v||'—')));
+  });
+  openCard.appendChild(og);
+  main.appendChild(openCard);
+
+  const truckCard = el('div', {class:'card summary-block'});
+  truckCard.appendChild(el('h3', {}, el('span',{html:ICONS.truck}), T_.page2Title));
+  if((s.truckRows||[]).length===0){
+    truckCard.appendChild(el('div',{class:'empty-hint'}, T_.noRows));
+  } else {
+    const table = el('table', {class:'mini-table'});
+    table.appendChild(el('tr',{}, el('th',{},T_.fromHour), el('th',{},T_.toHour), el('th',{},T_.truckCount), el('th',{},T_.shovelLoadsCount)));
+    s.truckRows.forEach(r=>{
+      table.appendChild(el('tr',{}, el('td',{},r.fromHour||'—'), el('td',{},r.toHour||'—'), el('td',{},r.truckCount||'0'), el('td',{},r.shovelLoadsCount||'0')));
+    });
+    truckCard.appendChild(table);
+  }
+  main.appendChild(truckCard);
+
+  const faultCard = el('div', {class:'card summary-block'});
+  faultCard.appendChild(el('h3', {}, el('span',{html:ICONS.alert}), T_.page3Title));
+  if((s.faultRows||[]).length===0){
+    faultCard.appendChild(el('div',{class:'empty-hint'}, T_.noFaults));
+  } else {
+    const table = el('table', {class:'mini-table'});
+    table.appendChild(el('tr',{}, el('th',{},T_.fromHour), el('th',{},T_.toHour), el('th',{},T_.faultType), el('th',{},T_.faultDetail)));
+    s.faultRows.forEach(r=>{
+      const detailKey = state.lang === 'he' ? 'faultDetailHe' : 'faultDetailAr';
+      const fallbackKey = state.lang === 'he' ? 'faultDetailAr' : 'faultDetailHe';
+      const detailText = r[detailKey] || r[fallbackKey] || '—';
+      table.appendChild(el('tr',{}, el('td',{},r.fromHour||'—'), el('td',{},r.toHour||'—'), el('td',{}, T_.faultTypes[r.faultType]||r.faultType||'—'), el('td',{},detailText)));
+    });
+    faultCard.appendChild(table);
+  }
+  main.appendChild(faultCard);
+
+  const closeCard = el('div', {class:'card summary-block'});
+  closeCard.appendChild(el('h3', {}, el('span',{html:ICONS.gauge}), T_.closingData));
+  const cg = el('div', {class:'summary-grid'});
+  [[T_.crusherEndClock, s.crusherEndClock],
+   [T_.crusherEndTime, s.crusherEndTimeNA ? T_.notWorked : s.crusherEndTime],
+   [T_.secondaryEndClock, s.secondaryEndClock],
+   [T_.secondaryEndTime, s.secondaryEndTimeNA ? T_.notWorked : s.secondaryEndTime],
+   [T_.lastTruckArrival, s.lastTruckArrival]
+  ].forEach(([l,v])=>{
+    cg.appendChild(el('div',{class:'summary-item'}, el('div',{class:'si-label'},l), el('div',{class:'si-val'}, v||'—')));
+  });
+  closeCard.appendChild(cg);
+  main.appendChild(closeCard);
+
+  const crusherH = computeHoursFromTimes(s.crusherStartTime, s.crusherEndTime, s.crusherStartTimeNA, s.crusherEndTimeNA);
+  const secondaryH = computeHoursFromTimes(s.secondaryStartTime, s.secondaryEndTime, s.secondaryStartTimeNA, s.secondaryEndTimeNA);
+  const hCard = el('div', {class:'card', style:'background:var(--stone-100);border-style:dashed;'});
+  const hGrid = el('div', {class:'summary-grid'});
+  hGrid.appendChild(el('div',{class:'summary-item'}, el('div',{class:'si-label'},T_.crusherWorkedHours),
+    el('div',{class:'si-val'}, crusherH===null ? '—' : (crusherH==='NA' ? T_.notWorked : crusherH + ' ' + T_.hoursUnit))));
+  hGrid.appendChild(el('div',{class:'summary-item'}, el('div',{class:'si-label'},T_.secondaryWorkedHours),
+    el('div',{class:'si-val'}, secondaryH===null ? '—' : (secondaryH==='NA' ? T_.notWorked : secondaryH + ' ' + T_.hoursUnit))));
+  hCard.appendChild(hGrid);
+  main.appendChild(hCard);
+
+  const actions = el('div', {style:'display:flex;gap:10px;margin-top:6px;'});
+  actions.appendChild(el('button', {class:'btn btn-ghost', style:'flex:1;', onclick:()=>{ state.screen='home'; state.editingId=null; render(); }}, T_.backToList));
+  actions.appendChild(el('button', {class:'btn', style:'flex:1;background:var(--danger-bg);color:var(--danger);', onclick:()=>{ state.confirmDeleteId = s.id; render(); }},
+    el('span',{html:ICONS.trash}), T_.deleteShift));
+  main.appendChild(actions);
+
+  return main;
+}
+
+function renderConfirm(){
+  const T_ = t();
+  return el('div', {class:'confirm-overlay'},
+    el('div', {class:'confirm-box'},
+      el('p', {}, T_.confirmDeleteQ),
+      el('div', {class:'confirm-actions'},
+        el('button', {class:'btn btn-ghost', style:'flex:1;', onclick:()=>{ state.confirmDeleteId=null; render(); }}, T_.no),
+        el('button', {class:'btn', style:'flex:1;background:var(--danger);color:#fff;', onclick: confirmDelete}, T_.yes)
+      )
+    )
+  );
+}
+
+async function confirmDelete(){
+  const id = state.confirmDeleteId;
+  state.shifts = state.shifts.filter(s=>s.id!==id);
+  await saveShifts();
+  state.confirmDeleteId = null;
+  state.screen = 'home';
+  state.editingId = null;
+  render();
+  showToast(t().deletedToast);
+}
+
+function setupPWA(){
+  const iconSvg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='36' fill='#1C1C1E'/><rect y='150' width='192' height='10' fill='#FFC229'/><g transform='translate(36,50)' fill='none' stroke='#E8790C' stroke-width='10' stroke-linecap='round' stroke-linejoin='round'><path d='M8 70V30h60v40'/><path d='M68 46h32l24 24v20h-16'/><circle cx='38' cy='92' r='14' fill='#E8790C' stroke='none'/><circle cx='118' cy='92' r='14' fill='#E8790C' stroke='none'/></g></svg>";
+  const iconUrl = 'data:image/svg+xml;base64,' + btoa(iconSvg);
+  const appleIcon = document.createElement('link');
+  appleIcon.rel = 'apple-touch-icon';
+  appleIcon.href = iconUrl;
+  document.head.appendChild(appleIcon);
+  const favicon = document.createElement('link');
+  favicon.rel = 'icon';
+  favicon.href = iconUrl;
+  document.head.appendChild(favicon);
+  try{
+    const manifest = {
+      name: "מעקב ייצור מתקן חצץ אספלט",
+      short_name: "מעקב ייצור",
+      start_url: ".",
+      display: "standalone",
+      background_color: "#1C1C1E",
+      theme_color: "#1C1C1E",
+      dir: "rtl",
+      lang: "he",
+      icons: [{ src: iconUrl, sizes: "192x192", type: "image/svg+xml", purpose: "any" }]
+    };
+    const manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+    const manifestUrl = URL.createObjectURL(manifestBlob);
+    const manifestLink = document.createElement('link');
+    manifestLink.rel = 'manifest';
+    manifestLink.href = manifestUrl;
+    document.head.appendChild(manifestLink);
+  }catch(e){}
+}
+setupPWA();
+
+(async function init(){
+  await loadShifts();
+  render();
+})();
+</script>
+</body>
+</html>
