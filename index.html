@@ -731,15 +731,17 @@ const HEADER_LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAAEBCAYAA
 
 async function loadShifts(){
   try{
-    const res = await fetch(SHEETS_API_URL, { method:'GET' });
-    const data = await res.json();
+    const data = await SecureAPI.list();
     state.shifts = data.shifts || [];
     state.remoteDraft = data.draft || null;
   }catch(e){
-    // keep whatever was already loaded if the sheet is unreachable
+    if(e.code === 'UNAUTHORIZED' || e.code === 'SESSION_EXPIRED'){
+      state.shifts = [];
+      state.remoteDraft = null;
+    }
   }
 }
-
+  
 let draftSaveTimer = null;
 function scheduleDraftSave(){
   if(state.screen !== 'form') return;
@@ -752,34 +754,26 @@ function scheduleDraftSave(){
 function flushDraftSave(){
   if(state.screen !== 'form') return;
   clearTimeout(draftSaveTimer);
-  const payload = JSON.stringify({ action:'saveDraft', draft: { form: state.form, step: state.step, editingId: state.editingId } });
-  try{
-    if(navigator.sendBeacon){
-      const blob = new Blob([payload], { type: 'text/plain;charset=UTF-8' });
-      navigator.sendBeacon(SHEETS_API_URL, blob);
-    } else {
-      fetch(SHEETS_API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: payload, keepalive:true });
-    }
-  }catch(e){}
+
+  SecureAPI.saveDraft(
+    {
+      form: state.form,
+      step: state.step,
+      editingId: state.editingId
+    },
+    'current'
+  ).catch(()=>{});
 }
 
 async function saveDraftRemote(draft){
   try{
-    await fetch(SHEETS_API_URL, {
-      method:'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action:'saveDraft', draft })
-    });
+    await SecureAPI.saveDraft(draft, 'current');
   }catch(e){}
 }
 
 async function clearDraftRemote(){
   try{
-    await fetch(SHEETS_API_URL, {
-      method:'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action:'clearDraft' })
-    });
+    await SecureAPI.clearDraft('current');
   }catch(e){}
 }
 
@@ -793,26 +787,22 @@ function draftHasContent(draft){
   return false;
 }
 
-async function saveShiftRemote(shift){
+  async function saveShiftRemote(shift){
   try{
-    await fetch(SHEETS_API_URL, {
-      method:'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action:'save', shift })
-    });
+    await SecureAPI.save(shift);
     return true;
-  }catch(e){ return false; }
+  }catch(e){
+    return false;
+  }
 }
 
 async function deleteShiftRemote(id){
   try{
-    await fetch(SHEETS_API_URL, {
-      method:'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action:'delete', id })
-    });
+    await SecureAPI.delete(id);
     return true;
-  }catch(e){ return false; }
+  }catch(e){
+    return false;
+  }
 }
 
 function showToast(msg){
