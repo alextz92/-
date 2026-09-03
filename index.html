@@ -791,8 +791,9 @@ function draftHasContent(draft){
   try{
     await SecureAPI.save(shift);
     return true;
-  }catch(e){
-    return false;
+}catch(e){
+  showToast('שגיאה: ' + (e.code || e.message || 'UNKNOWN'));
+  return false;
   }
 }
 
