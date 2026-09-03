@@ -480,12 +480,8 @@ let state = {
   shifts: [],
   errors: {},
   confirmDeleteId: null,
-  adminUnlocked: false,
-  adminPromptFor: null,
-  adminPromptAction: null,
   remoteDraft: null,
   dailyExportOpen: false,
-  adminError: false,
   monthlyKey: null,
   form: emptyForm()
 };
@@ -873,9 +869,7 @@ function render(){
   if(state.confirmDeleteId){
     root.appendChild(renderConfirm());
   }
-  if(state.adminPromptFor){
-    root.appendChild(renderAdminPrompt());
-  }
+  
   if(state.dailyExportOpen){
     root.appendChild(renderDailyExportPrompt());
   }
