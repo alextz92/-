@@ -487,6 +487,8 @@
             );
           }
 
+          alert('שגיאה: ' + (e.code || e.message || 'UNKNOWN'));
+          
           return false;
         }
       };
