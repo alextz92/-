@@ -1,12 +1,55 @@
 (() => {
   'use strict';
 
-  function addStyles() {
-    if (document.getElementById('secure-auth-style')) return;
+  const NEW_API = 'https://script.google.com/macros/s/AKfycby5KG33FtPNsqgk6_lnLGfbsCrCMt1rtJtrtt8SOIbEeQQChtoHdq6SFaVxm39PEWou/exec';
 
-    const style = document.createElement('style');
-    style.id = 'secure-auth-style';
-    style.textContent = `
+  const realFetch = window.fetch.bind(window);
+
+  window.fetch = function(input, init) {
+    const url =
+      typeof input === 'string'
+        ? input
+        : (input && input.url) || '';
+
+    if (
+      url.includes('script.google.com/macros/s/') &&
+      !url.startsWith(NEW_API)
+    ) {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            shifts: [],
+            draft: null
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+      );
+    }
+
+    return realFetch(input, init);
+  };
+
+  function addStyles() {
+    if (
+      document.getElementById(
+        'secure-auth-style'
+      )
+    ) {
+      return;
+    }
+
+    const s =
+      document.createElement('style');
+
+    s.id =
+      'secure-auth-style';
+
+    s.textContent = `
       #secure-auth-overlay{
         position:fixed;
         inset:0;
@@ -106,31 +149,53 @@
       }
     `;
 
-    document.head.appendChild(style);
+    document.head.appendChild(s);
   }
 
   function showLogin(message = '') {
     addStyles();
 
-    let overlay = document.getElementById('secure-auth-overlay');
+    let o =
+      document.getElementById(
+        'secure-auth-overlay'
+      );
 
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'secure-auth-overlay';
+    if (!o) {
+      o =
+        document.createElement('div');
 
-      overlay.innerHTML = `
+      o.id =
+        'secure-auth-overlay';
+
+      o.innerHTML = `
         <div id="secure-auth-card">
-          <h2>כניסה מאובטחת</h2>
-          <p>יש להתחבר כדי לצפות או לעדכן נתוני ייצור.</p>
 
-          <label for="secure-user">משתמש</label>
+          <h2>
+            כניסה מאובטחת
+          </h2>
+
+          <p>
+            יש להתחבר כדי לצפות
+            או לעדכן נתוני ייצור.
+          </p>
+
+          <label>
+            משתמש
+          </label>
 
           <select id="secure-user">
-            <option value="operator">מפעיל</option>
-            <option value="admin">מנהל</option>
+            <option value="operator">
+              מפעיל
+            </option>
+
+            <option value="admin">
+              מנהל
+            </option>
           </select>
 
-          <label for="secure-pass">סיסמה</label>
+          <label>
+            סיסמה
+          </label>
 
           <input
             id="secure-pass"
@@ -139,55 +204,77 @@
             placeholder="סיסמה"
           >
 
-          <button id="secure-login-btn" type="button">
+          <button
+            id="secure-login-btn"
+            type="button"
+          >
             כניסה
           </button>
 
-          <div id="secure-auth-error"></div>
+          <div
+            id="secure-auth-error"
+          ></div>
+
         </div>
       `;
 
-      document.body.appendChild(overlay);
+      document.body.appendChild(o);
 
-      const btn = overlay.querySelector('#secure-login-btn');
-      const pass = overlay.querySelector('#secure-pass');
+      const btn =
+        o.querySelector(
+          '#secure-login-btn'
+        );
 
-      async function submit() {
-        const err = overlay.querySelector('#secure-auth-error');
+      const pass =
+        o.querySelector(
+          '#secure-pass'
+        );
 
-        err.textContent = '';
-        btn.disabled = true;
-        btn.textContent = 'מתחבר...';
+      const submit =
+        async () => {
 
-        try {
-          const username =
-            overlay.querySelector('#secure-user').value;
+          const err =
+            o.querySelector(
+              '#secure-auth-error'
+            );
 
-          await SecureAPI.login(
-            username,
-            pass.value
-          );
+          err.textContent = '';
 
-          overlay.remove();
+          btn.disabled = true;
 
-          await refreshSecureData();
+          btn.textContent =
+            'מתחבר...';
 
-          showSessionBar();
+          try {
+            await SecureAPI.login(
+              o.querySelector(
+                '#secure-user'
+              ).value,
+              pass.value
+            );
 
-        } catch (e) {
+            o.remove();
 
-          err.textContent =
-            e.code === 'RATE_LIMITED'
-              ? 'יותר מדי ניסיונות. נסה שוב מאוחר יותר.'
-              : 'שם משתמש או סיסמה שגויים.';
+            await secureLoad();
 
-        } finally {
+            showSessionBar();
 
-          btn.disabled = false;
-          btn.textContent = 'כניסה';
+          } catch (e) {
 
-        }
-      }
+            err.textContent =
+              e.code ===
+              'TOO_MANY_ATTEMPTS'
+                ? 'יותר מדי ניסיונות. נסה שוב מאוחר יותר.'
+                : 'שם משתמש או סיסמה שגויים.';
+
+          } finally {
+
+            btn.disabled = false;
+
+            btn.textContent =
+              'כניסה';
+          }
+        };
 
       btn.addEventListener(
         'click',
@@ -205,24 +292,22 @@
     }
 
     const err =
-      overlay.querySelector('#secure-auth-error');
+      o.querySelector(
+        '#secure-auth-error'
+      );
 
     if (err && message) {
-      err.textContent = message;
+      err.textContent =
+        message;
     }
   }
 
   function showSessionBar() {
-    addStyles();
-
-    const old =
-      document.getElementById(
+    document
+      .getElementById(
         'secure-session-bar'
-      );
-
-    if (old) {
-      old.remove();
-    }
+      )
+      ?.remove();
 
     const bar =
       document.createElement('div');
@@ -244,118 +329,78 @@
       </button>
     `;
 
-    bar.querySelector('button')
-      .addEventListener(
-        'click',
-        async () => {
+    bar.querySelector(
+      'button'
+    ).onclick =
+      async () => {
 
-          await SecureAPI.logout();
+        await SecureAPI.logout();
 
-          bar.remove();
+        bar.remove();
 
-          showLogin(
-            'התנתקת מהמערכת.'
-          );
-        }
-      );
+        showLogin(
+          'התנתקת מהמערכת.'
+        );
+      };
 
     document.body.appendChild(bar);
   }
 
-  async function refreshSecureData() {
-    try {
+  async function secureLoad() {
+    const data =
+      await SecureAPI.list();
 
-      const data =
-        await SecureAPI.list();
+    state.shifts =
+      data.shifts || [];
 
-      if (window.state) {
+    state.remoteDraft =
+      data.draft || null;
 
-        state.shifts =
-          data.shifts || [];
-
-        state.remoteDraft =
-          data.draft || null;
-      }
-
-      if (
-        typeof window.render === 'function'
-      ) {
-        window.render();
-      }
-
-    } catch (e) {
-
-      if (
-        e.code === 'UNAUTHORIZED' ||
-        e.code === 'SESSION_EXPIRED'
-      ) {
-
-        showLogin(
-          'ההתחברות פגה. התחבר מחדש.'
-        );
-      }
-
-      throw e;
+    if (
+      typeof render === 'function'
+    ) {
+      render();
     }
   }
 
   function installOverrides() {
 
     window.loadShifts =
-      async function () {
+      async function() {
 
         if (
           !SecureAPI.isLoggedIn()
         ) {
 
-          if (window.state) {
+          state.shifts = [];
 
-            state.shifts = [];
+          state.remoteDraft =
+            null;
 
-            state.remoteDraft =
-              null;
+          return;
+        }
+
+        try {
+
+          await secureLoad();
+
+        } catch (e) {
+
+          if (
+            e.code === 'UNAUTHORIZED' ||
+            e.code === 'SESSION_EXPIRED'
+          ) {
+
+            showLogin(
+              'ההתחברות פגה. התחבר מחדש.'
+            );
           }
-
-          return;
         }
-
-        await refreshSecureData();
-      };
-
-
-    window.flushDraftSave =
-      function () {
-
-        if (
-          !window.state ||
-          state.screen !== 'form' ||
-          !SecureAPI.isLoggedIn()
-        ) {
-          return;
-        }
-
-        if (
-          window.draftSaveTimer
-        ) {
-          clearTimeout(
-            draftSaveTimer
-          );
-        }
-
-        SecureAPI.saveDraft(
-          {
-            form: state.form,
-            step: state.step,
-            editingId:
-              state.editingId || null
-          },
-          'current'
-        ).catch(() => {});
       };
 
 
     window.saveDraftRemote =
-      async function (draft) {
+      async draft => {
 
         try {
 
@@ -374,7 +419,7 @@
 
 
     window.clearDraftRemote =
-      async function () {
+      async () => {
 
         try {
 
@@ -391,8 +436,36 @@
       };
 
 
+    window.flushDraftSave =
+      function() {
+
+        if (
+          state.screen !== 'form' ||
+          !SecureAPI.isLoggedIn()
+        ) {
+          return;
+        }
+
+        try {
+          clearTimeout(
+            draftSaveTimer
+          );
+        } catch (_) {}
+
+        SecureAPI.saveDraft(
+          {
+            form: state.form,
+            step: state.step,
+            editingId:
+              state.editingId || null
+          },
+          'current'
+        ).catch(() => {});
+      };
+
+
     window.saveShiftRemote =
-      async function (shift) {
+      async shift => {
 
         try {
 
@@ -420,7 +493,7 @@
 
 
     window.deleteShiftRemote =
-      async function (id) {
+      async id => {
 
         try {
 
@@ -433,8 +506,7 @@
         } catch (e) {
 
           if (
-            e.code === 'FORBIDDEN' &&
-            typeof window.showToast === 'function'
+            e.code === 'FORBIDDEN'
           ) {
 
             showToast(
@@ -458,24 +530,15 @@
 
 
     window.requestEditShift =
-      function (id) {
+      function(id) {
 
         if (
           SecureAPI.getRole() === 'admin'
         ) {
 
-          if (
-            typeof window.openShiftForEdit ===
-            'function'
-          ) {
+          openShiftForEdit(id);
 
-            openShiftForEdit(id);
-          }
-
-        } else if (
-          typeof window.showToast ===
-          'function'
-        ) {
+        } else {
 
           showToast(
             'פעולה זו זמינה למנהל בלבד'
@@ -485,61 +548,71 @@
 
 
     window.requestDeleteShift =
-      function (id) {
+      function(id) {
 
         if (
           SecureAPI.getRole() === 'admin'
         ) {
 
-          if (window.state) {
+          state.confirmDeleteId =
+            id;
 
-            state.confirmDeleteId =
-              id;
-          }
+          render();
 
-          if (
-            typeof window.render ===
-            'function'
-          ) {
-
-            render();
-          }
-
-        } else if (
-          typeof window.showToast ===
-          'function'
-        ) {
+        } else {
 
           showToast(
             'פעולה זו זמינה למנהל בלבד'
           );
         }
       };
+
+
+    window.confirmDelete =
+      async function() {
+
+        const id =
+          state.confirmDeleteId;
+
+        const ok =
+          await deleteShiftRemote(id);
+
+        if (!ok) {
+          return;
+        }
+
+        await loadShifts();
+
+        state.confirmDeleteId =
+          null;
+
+        state.screen =
+          'home';
+
+        state.editingId =
+          null;
+
+        render();
+
+        showToast(
+          t().deletedToast
+        );
+      };
   }
+
+  addStyles();
+
+  showLogin();
 
   document.addEventListener(
     'DOMContentLoaded',
     async () => {
 
-      addStyles();
-
       installOverrides();
-
-      if (!window.SecureAPI) {
-
-        showLogin(
-          'שגיאת טעינה: secure-api.js לא נטען.'
-        );
-
-        return;
-      }
 
       if (
         !SecureAPI.isLoggedIn()
       ) {
-
-        showLogin();
-
         return;
       }
 
@@ -547,7 +620,13 @@
 
         await SecureAPI.me();
 
-        await refreshSecureData();
+        document
+          .getElementById(
+            'secure-auth-overlay'
+          )
+          ?.remove();
+
+        await secureLoad();
 
         showSessionBar();
 
